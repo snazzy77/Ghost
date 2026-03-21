@@ -1,0 +1,125 @@
+:root {
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --text: #17202a;
+  --muted: #5f6c7b;
+  --accent: #1463ff;
+  --border: #dce3ea;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: radial-gradient(circle at top left, #edf4ff 0%, var(--bg) 50%, #f8fbff 100%);
+  color: var(--text);
+}
+
+.container {
+  max-width: 980px;
+  margin: 24px auto;
+  padding: 0 16px 32px;
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+h1, h2 {
+  margin-top: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.stack {
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+
+input,
+button,
+textarea {
+  font: inherit;
+}
+
+input {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 180px;
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.92;
+}
+
+#statusBox {
+  background: #0f172a;
+  color: #dbeafe;
+  padding: 10px;
+  border-radius: 8px;
+  min-height: 96px;
+  white-space: pre-wrap;
+}
+
+.chatBox {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 220px;
+  max-height: 340px;
+  overflow: auto;
+  padding: 10px;
+  background: #fbfdff;
+  margin-bottom: 10px;
+}
+
+.msg {
+  margin: 6px 0;
+  line-height: 1.35;
+}
+
+.msg .role {
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+@media (max-width: 760px) {
+  .row {
+    flex-direction: column;
+  }
+  input {
+    min-width: 0;
+    width: 100%;
+  }
+}

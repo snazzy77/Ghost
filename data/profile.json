@@ -1,0 +1,49 @@
+{
+  "friend_name": "alex",
+  "message_count": 11000,
+  "avg_chars": 24.01,
+  "avg_tokens": 5.16,
+  "question_rate": 0.0,
+  "exclamation_density": 0.0,
+  "emoji_density": 0.0,
+  "lowercase_ratio": 1.0,
+  "sentiment_center": 0.0324,
+  "sentiment_variability": 0.0849,
+  "common_endings": [
+    "morning, i am good how about you",
+    "let us do something easy tonight",
+    "that is normal, take it step by step",
+    "yes send a short follow up",
+    "sure tell me the details",
+    "not yet, grabbing food soon",
+    "a bit busy but i can talk later",
+    "yes that message works"
+  ],
+  "top_words": [
+    "you",
+    "i",
+    "am",
+    "it",
+    "see",
+    "yes",
+    "can",
+    "yeah",
+    "me",
+    "good",
+    "sounds",
+    "and",
+    "a",
+    "that",
+    "fr",
+    "when",
+    "are",
+    "got",
+    "is",
+    "works"
+  ],
+  "interpretation": {
+    "tone": "neutral-pragmatic",
+    "energy": "concise",
+    "style": "casual, text-native"
+  }
+}
