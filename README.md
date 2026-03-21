@@ -88,6 +88,19 @@ In the UI:
 4. Use `Refresh Status` / `Auto Poll`
 5. Chat immediately in instant mode; it auto-switches to tuned mode when training completes
 
+## 3.1) What "Instant Mode" Means
+
+- `instant` = upload is processed and chat works immediately, but background LoRA training is still running.
+- `tuned` = training finished and the adapter is active for that conversation.
+
+You can verify with:
+
+```powershell
+curl.exe "http://127.0.0.1:8000/train-status/YOUR_JOB_ID"
+```
+
+When `status` becomes `completed`, chat for that `conversation_id` uses the tuned adapter.
+
 ## 4) Terminal API Flow (optional)
 
 ### Upload
@@ -167,6 +180,50 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.device_coun
 ```
 
 If `False`, install CUDA torch in Ghost venv (see setup section).
+
+### Job status is `queued` for too long
+
+- Make sure Terminal 3 worker is running and shows:
+  `*** Listening on ghost-train...`
+- Re-upload once to create a fresh job if an old queued job is stale.
+
+### Why quality can feel weak
+
+- 50 lines is very small for style tuning.
+- Use more chat lines when possible (`message_1_converted.jsonl` instead of only 50 lines).
+- Increase epochs moderately (for small data, try `1.5` to `3.0`).
+
+### What epochs mean
+
+- `1.0` epoch = one full pass through dataset
+- `2.0` epochs = two full passes
+- `0.5` epoch = half pass
+
+More epochs can improve style fit, but too many on tiny data can overfit.
+
+## 6) Stop Commands (Clean Shutdown)
+
+### Stop worker (`run_worker.py`)
+
+In worker terminal:
+`Ctrl + C`
+
+### Stop API (`uvicorn`)
+
+In API terminal:
+`Ctrl + C`
+
+### Stop Redis container
+
+```powershell
+docker stop ghost-redis
+```
+
+Optional remove container:
+
+```powershell
+docker rm ghost-redis
+```
 
 ## Upload File Format
 
