@@ -30,6 +30,10 @@ def load_pairs(path: str | Path) -> list[dict]:
 
 
 def top_examples(query: str, pairs: list[dict], k: int = 4) -> list[dict]:
+    return [row for _, row in top_examples_scored(query, pairs, k=k)]
+
+
+def top_examples_scored(query: str, pairs: list[dict], k: int = 4) -> list[tuple[float, dict]]:
     qv = Counter(tokenize(query))
     scored: list[tuple[float, dict]] = []
     for row in pairs:
@@ -41,5 +45,4 @@ def top_examples(query: str, pairs: list[dict], k: int = 4) -> list[dict]:
             score += 0.05
         scored.append((score, row))
     scored.sort(key=lambda x: x[0], reverse=True)
-    return [r for _, r in scored[:k]]
-
+    return scored[:k]

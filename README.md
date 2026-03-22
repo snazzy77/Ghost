@@ -4,6 +4,7 @@ Ghost supports:
 - Instant chat right after upload (base model + retrieval/profile)
 - Background LoRA training
 - Automatic switch to tuned adapter when ready
+- Multi-chat browser UI (WhatsApp-style thread list)
 
 ## 1) Setup (Always Use a venv)
 
@@ -85,10 +86,18 @@ In the UI:
 1. Choose file (`.jsonl`)
 2. Enter `target_speaker` exactly as it appears in `speaker`
 3. Click `Upload + Start Training`
-4. Use `Refresh Status` / `Auto Poll`
-5. Chat immediately in instant mode; it auto-switches to tuned mode when training completes
+4. Use the left sidebar chat list to switch between conversations
+5. Use `Refresh Status` / `Auto Poll`
+6. Chat immediately in instant mode; it auto-switches to tuned mode when training completes
 
-## 3.1) What "Instant Mode" Means
+### 3.1) Multi-chat behavior
+
+- Each upload creates a new `conversation_id` thread.
+- Click a thread in the left sidebar to switch chats.
+- Message history is kept per conversation in browser local storage.
+- `Refresh Chats` reloads conversation list from API.
+
+## 3.2) What "Instant Mode" Means
 
 - `instant` = upload is processed and chat works immediately, but background LoRA training is still running.
 - `tuned` = training finished and the adapter is active for that conversation.
@@ -100,6 +109,21 @@ curl.exe "http://127.0.0.1:8000/train-status/YOUR_JOB_ID"
 ```
 
 When `status` becomes `completed`, chat for that `conversation_id` uses the tuned adapter.
+
+## 3.3) Retrieval Modes (Chat)
+
+Ghost now supports two retrieval modes in the UI:
+
+- Default mode (`Retrieval-Only` unchecked):
+  - Retrieves top similar examples from your dataset
+  - Uses those examples + profile prompt to generate a new reply
+- Retrieval-only mode (`Retrieval-Only` checked):
+  - Returns the closest real historical reply directly
+  - Useful for stronger mimicry when the prompt is close to prior examples
+
+API fields for `/chat`:
+- `retrieval_only` (bool, default `false`)
+- `retrieval_k` (int, default `4`, max `8`)
 
 ## 4) Terminal API Flow (optional)
 
@@ -133,7 +157,15 @@ while ($true) { curl.exe "http://127.0.0.1:8000/train-status/YOUR_JOB_ID"; Start
 ```powershell
 curl.exe -X POST "http://127.0.0.1:8000/chat" `
   -H "Content-Type: application/json" `
-  -d "{\"conversation_id\":\"YOUR_CONVERSATION_ID\",\"message\":\"hey what are you up to?\",\"history\":[]}"
+  -d "{\"conversation_id\":\"YOUR_CONVERSATION_ID\",\"message\":\"hey what are you up to?\",\"history\":[],\"retrieval_only\":false,\"retrieval_k\":4}"
+```
+
+Retrieval-only example:
+
+```powershell
+curl.exe -X POST "http://127.0.0.1:8000/chat" `
+  -H "Content-Type: application/json" `
+  -d "{\"conversation_id\":\"YOUR_CONVERSATION_ID\",\"message\":\"hey what are you up to?\",\"history\":[],\"retrieval_only\":true,\"retrieval_k\":4}"
 ```
 
 ## 5) Troubleshooting

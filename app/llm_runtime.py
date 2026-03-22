@@ -3,9 +3,9 @@ from pathlib import Path
 
 import torch
 from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-from .retrieval import top_examples
+from .retrieval import top_examples_scored
 
 
 class LLMRuntime:
@@ -19,17 +19,39 @@ class LLMRuntime:
         if self._loaded_model_key == key and self._model is not None and self._tokenizer is not None:
             return
 
+        offload_dir = Path("app_state") / "offload"
+        offload_dir.mkdir(parents=True, exist_ok=True)
+
         self._tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
         if self._tokenizer.pad_token is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
+
+        quant_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+        )
 
         model = AutoModelForCausalLM.from_pretrained(
             model_id,
             dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
             device_map="auto",
+            quantization_config=quant_config,
+            offload_folder=str(offload_dir),
+            low_cpu_mem_usage=True,
         )
         if adapter_path:
-            model = PeftModel.from_pretrained(model, adapter_path)
+            try:
+                model = PeftModel.from_pretrained(
+                    model,
+                    adapter_path,
+                    device_map="auto",
+                    offload_folder=str(offload_dir),
+                )
+            except Exception:
+                # Fallback to base model so chat remains available even if adapter attach fails.
+                pass
 
         self._model = model
         self._loaded_model_key = key
@@ -71,6 +93,8 @@ class LLMRuntime:
         message: str,
         history: list[dict] | None = None,
         adapter_path: str | None = None,
+        retrieval_only: bool = False,
+        retrieval_k: int = 4,
         max_new_tokens: int = 160,
         temperature: float = 0.7,
         top_p: float = 0.85,
@@ -82,7 +106,20 @@ class LLMRuntime:
 
         profile = json.loads(Path(profile_path).read_text(encoding="utf-8"))
         pairs = json.loads(Path(pairs_path).read_text(encoding="utf-8"))
-        examples = top_examples(message, pairs, k=4)
+        scored = top_examples_scored(message, pairs, k=max(1, min(int(retrieval_k), 8)))
+        examples = [row for _, row in scored]
+
+        if retrieval_only:
+            if not scored:
+                return "I do not have a close example for that yet."
+            best_score, best = scored[0]
+            # If confidence is low, still return the nearest real response to preserve style.
+            reply = str(best.get("friend_reply", "")).strip()
+            if reply:
+                return reply
+            if best_score <= 0.0:
+                return "I do not have a close example for that yet."
+            return str(best.get("user_text", "")).strip() or "I do not have a close example for that yet."
 
         messages = [{"role": "system", "content": self._build_system_prompt(profile, examples)}]
         if history:
@@ -120,4 +157,3 @@ class LLMRuntime:
 
 
 runtime = LLMRuntime()
-

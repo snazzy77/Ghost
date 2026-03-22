@@ -12,6 +12,8 @@ class ChatRequest(BaseModel):
     conversation_id: str
     message: str
     history: list[dict] = Field(default_factory=list)
+    retrieval_only: bool = False
+    retrieval_k: int = 4
 
 
 class ChatResponse(BaseModel):
@@ -28,3 +30,12 @@ class TrainStatusResponse(BaseModel):
     log_path: str | None = None
     error: str | None = None
 
+
+class ConversationSummary(BaseModel):
+    conversation_id: str
+    target_speaker: str
+    model_id: str
+    created_at: str
+    updated_at: str
+    latest_job_id: str | None = None
+    latest_job_status: str | None = None

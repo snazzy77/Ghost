@@ -8,72 +8,86 @@
 </head>
 <body>
   <main class="container">
-    <section class="card">
+    <aside class="card sidebar">
       <h1>Ghost Local</h1>
-      <p class="muted">Upload chat history, train in background, and chat from browser.</p>
-
-      <form id="uploadForm" class="stack">
-        <label>
-          Chat File (.jsonl)
-          <input id="fileInput" type="file" accept=".jsonl" required />
-        </label>
-
-        <label>
-          Target Speaker
-          <input id="speakerInput" type="text" placeholder="alex" required />
-        </label>
-
-        <label>
-          Model
-          <input id="modelInput" type="text" value="Qwen/Qwen2.5-1.5B-Instruct" />
-        </label>
-
-        <div class="row">
-          <label>
-            Max Length
-            <input id="maxLengthInput" type="number" value="384" min="128" />
-          </label>
-          <label>
-            Grad Accum
-            <input id="gradAccumInput" type="number" value="64" min="1" />
-          </label>
-          <label>
-            Epochs
-            <input id="epochsInput" type="number" value="0.5" min="0.1" step="0.1" />
-          </label>
-        </div>
-
-        <button id="uploadBtn" type="submit">Upload + Start Training</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h2>Status</h2>
-      <div class="stack">
-        <label>
-          Conversation ID
-          <input id="conversationId" type="text" readonly />
-        </label>
-        <label>
-          Job ID
-          <input id="jobId" type="text" readonly />
-        </label>
-        <div class="row">
-          <button id="refreshBtn" type="button">Refresh Status</button>
-          <button id="pollBtn" type="button">Auto Poll</button>
-          <button id="stopPollBtn" type="button">Stop Poll</button>
-        </div>
-        <pre id="statusBox"></pre>
+      <p class="muted">Multi-chat view like WhatsApp. Select a chat or upload a new one.</p>
+      <div class="row">
+        <button id="refreshConversationsBtn" type="button">Refresh Chats</button>
       </div>
-    </section>
+      <div id="conversationList" class="conversationList"></div>
+    </aside>
 
-    <section class="card">
-      <h2>Chat</h2>
-      <div id="chatBox" class="chatBox"></div>
-      <form id="chatForm" class="row">
-        <input id="chatInput" type="text" placeholder="Type a message..." />
-        <button type="submit">Send</button>
-      </form>
+    <section class="mainArea">
+      <section class="card">
+        <h2>Upload / New Chat</h2>
+        <form id="uploadForm" class="stack">
+          <label>
+            Chat File (.jsonl)
+            <input id="fileInput" type="file" accept=".jsonl" required />
+          </label>
+
+          <label>
+            Target Speaker
+            <input id="speakerInput" type="text" placeholder="alex" required />
+          </label>
+
+          <label>
+            Model
+            <input id="modelInput" type="text" value="Qwen/Qwen2.5-1.5B-Instruct" />
+          </label>
+
+          <div class="row">
+            <label>
+              Max Length
+              <input id="maxLengthInput" type="number" value="384" min="128" />
+            </label>
+            <label>
+              Grad Accum
+              <input id="gradAccumInput" type="number" value="64" min="1" />
+            </label>
+            <label>
+              Epochs
+              <input id="epochsInput" type="number" value="0.5" min="0.1" step="0.1" />
+            </label>
+          </div>
+
+          <button id="uploadBtn" type="submit">Upload + Start Training</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Status</h2>
+        <div class="stack">
+          <label>
+            Conversation ID
+            <input id="conversationId" type="text" readonly />
+          </label>
+          <label>
+            Job ID
+            <input id="jobId" type="text" readonly />
+          </label>
+          <div class="row">
+            <button id="refreshBtn" type="button">Refresh Status</button>
+            <button id="pollBtn" type="button">Auto Poll</button>
+            <button id="stopPollBtn" type="button">Stop Poll</button>
+          </div>
+          <pre id="statusBox"></pre>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Chat</h2>
+        <div id="chatTitle" class="muted">No chat selected</div>
+        <label class="checkboxRow">
+          <input id="retrievalOnlyInput" type="checkbox" />
+          Retrieval-Only Reply (use closest real example)
+        </label>
+        <div id="chatBox" class="chatBox"></div>
+        <form id="chatForm" class="row">
+          <input id="chatInput" type="text" placeholder="Type a message..." />
+          <button type="submit">Send</button>
+        </form>
+      </section>
     </section>
   </main>
 

@@ -16,11 +16,12 @@ from .db import (
     get_conversation,
     get_training_job,
     init_db,
+    list_conversations,
     update_training_job,
     upsert_conversation,
 )
 from .llm_runtime import runtime
-from .schemas import ChatRequest, ChatResponse, TrainStatusResponse, UploadResponse
+from .schemas import ChatRequest, ChatResponse, ConversationSummary, TrainStatusResponse, UploadResponse
 from .tasks import run_training_job
 
 
@@ -59,6 +60,23 @@ def index() -> FileResponse:
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
+
+
+@app.get("/conversations", response_model=list[ConversationSummary])
+def conversations() -> list[ConversationSummary]:
+    rows = list_conversations()
+    return [
+        ConversationSummary(
+            conversation_id=row["id"],
+            target_speaker=row["target_speaker"],
+            model_id=row["model_id"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            latest_job_id=row["latest_job_id"],
+            latest_job_status=row["latest_job_status"],
+        )
+        for row in rows
+    ]
 
 
 @app.post("/upload", response_model=UploadResponse)
@@ -175,6 +193,8 @@ def chat(req: ChatRequest) -> ChatResponse:
         message=req.message,
         history=req.history,
         adapter_path=adapter_path if mode == "tuned" else None,
+        retrieval_only=req.retrieval_only,
+        retrieval_k=req.retrieval_k,
     )
     return ChatResponse(conversation_id=req.conversation_id, mode=mode, reply=reply)
 

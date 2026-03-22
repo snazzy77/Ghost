@@ -185,3 +185,24 @@ def get_training_job(job_id: str) -> sqlite3.Row | None:
     with get_conn() as conn:
         return conn.execute("SELECT * FROM training_jobs WHERE id = ?", (job_id,)).fetchone()
 
+
+def list_conversations() -> list[sqlite3.Row]:
+    with get_conn() as conn:
+        return conn.execute(
+            """
+            SELECT
+                c.*,
+                tj.id AS latest_job_id,
+                tj.status AS latest_job_status
+            FROM conversations c
+            LEFT JOIN training_jobs tj
+              ON tj.id = (
+                  SELECT t2.id
+                  FROM training_jobs t2
+                  WHERE t2.conversation_id = c.id
+                  ORDER BY t2.created_at DESC
+                  LIMIT 1
+              )
+            ORDER BY c.updated_at DESC
+            """
+        ).fetchall()

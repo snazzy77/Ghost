@@ -19,11 +19,24 @@ body {
 }
 
 .container {
-  max-width: 980px;
+  max-width: 1200px;
   margin: 24px auto;
   padding: 0 16px 32px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.mainArea {
+  flex: 1 1 auto;
+  min-width: 0;
   display: grid;
   gap: 16px;
+}
+
+.sidebar {
+  width: 320px;
+  flex: 0 0 320px;
 }
 
 .card {
@@ -56,6 +69,20 @@ label {
   display: grid;
   gap: 4px;
   font-size: 14px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.checkboxRow input {
+  min-width: 16px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
 }
 
 input,
@@ -104,6 +131,44 @@ button:hover {
   margin-bottom: 10px;
 }
 
+.conversationList {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+  max-height: 640px;
+  overflow: auto;
+}
+
+.conversationItem {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.conversationItem:last-child {
+  border-bottom: 0;
+}
+
+.conversationItem.active {
+  background: #e9f1ff;
+}
+
+.conversationName {
+  font-weight: 600;
+}
+
+.conversationMeta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .msg {
   margin: 6px 0;
   line-height: 1.35;
@@ -115,9 +180,19 @@ button:hover {
 }
 
 @media (max-width: 760px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
   .row {
     flex-direction: column;
   }
+
   input {
     min-width: 0;
     width: 100%;
