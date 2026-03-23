@@ -1,16 +1,13 @@
-# Ghost API (Instant + Background LoRA)
+# Ghost
 
-Ghost supports:
-- Instant chat right after upload (base model + retrieval/profile)
-- Background LoRA training
-- Automatic switch to tuned adapter when ready
-- Multi-chat browser UI (WhatsApp-style thread list)
+Local chat-mimic app with:
+- Instant chat after upload (retrieval + profile)
+- Optional background LoRA training (Redis + RQ worker)
+- Multi-chat browser UI (thread list like WhatsApp)
 
-## 1) Setup (Always Use a venv)
+## Quick Start (Windows)
 
-Always run Ghost inside `Ghost\.venv` (never global Python).
-
-### Windows PowerShell
+### 1) Setup venv
 
 ```powershell
 cd C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost
@@ -19,45 +16,29 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-### Every new terminal
+Check interpreter:
 
 ```powershell
-cd C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost
-.\.venv\Scripts\Activate.ps1
 python -c "import sys; print(sys.executable)"
 ```
 
-Expected output ends with:
-`...\Ghost\.venv\Scripts\python.exe`
+It should end with `Ghost\.venv\Scripts\python.exe`.
 
-### Optional NVIDIA CUDA torch install
+### 2) Start services (3 terminals)
 
-```powershell
-python -m pip uninstall -y torch torchvision torchaudio
-python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-```
+Terminal A (Redis):
 
-## 2) Start Everything (4 terminals)
-
-### Terminal 1: Redis
-
-First time:
-```powershell
-docker run --name ghost-redis -p 6379:6379 redis:7
-```
-
-Later runs:
 ```powershell
 docker start ghost-redis
 ```
 
-If conflict/stuck:
+If it does not exist yet:
+
 ```powershell
-docker rm -f ghost-redis
 docker run --name ghost-redis -p 6379:6379 redis:7
 ```
 
-### Terminal 2: API
+Terminal B (API):
 
 ```powershell
 cd C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost
@@ -65,71 +46,56 @@ cd C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-### Terminal 3: Worker
+Terminal C (Worker):
 
 ```powershell
 cd C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost
 .\.venv\Scripts\Activate.ps1
-& "C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost\.venv\Scripts\python.exe" run_worker.py
+& "C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost\.venv\Scripts\python.exe" .\run_worker.py
 ```
 
-### Terminal 4: Commands / checks
-
-Use this for `curl.exe`, status checks, and pip installs.
-
-## 3) Browser UI Flow
+### 3) Open UI
 
 Open:
+
 `http://127.0.0.1:8000/`
 
-In the UI:
-1. Choose file (`.jsonl`)
-2. Enter `target_speaker` exactly as it appears in `speaker`
-3. Click `Upload + Start Training`
-4. Use the left sidebar chat list to switch between conversations
-5. Use `Refresh Status` / `Auto Poll`
-6. Chat immediately in instant mode; it auto-switches to tuned mode when training completes
+---
 
-### 3.1) Multi-chat behavior
+## Browser Workflow
 
-- Each upload creates a new `conversation_id` thread.
-- Click a thread in the left sidebar to switch chats.
-- Message history is kept per conversation in browser local storage.
-- `Refresh Chats` reloads conversation list from API.
+1. Upload `.jsonl` chat file.
+2. Enter `target_speaker` exactly as it appears in `speaker`.
+3. Click `Upload + Start Training`.
+4. Use left sidebar to switch chat threads.
+5. Use `Refresh Status` / `Auto Poll` for training status.
 
-## 3.2) What "Instant Mode" Means
+Each upload creates a new `conversation_id` thread.
 
-- `instant` = upload is processed and chat works immediately, but background LoRA training is still running.
-- `tuned` = training finished and the adapter is active for that conversation.
+## Modes
 
-You can verify with:
+### Instant vs Tuned
 
-```powershell
-curl.exe "http://127.0.0.1:8000/train-status/YOUR_JOB_ID"
-```
+- `instant`: chat works immediately using base model + retrieval/profile.
+- `tuned`: LoRA adapter finished and is active for that conversation.
 
-When `status` becomes `completed`, chat for that `conversation_id` uses the tuned adapter.
+When `/train-status/{job_id}` returns `completed`, that conversation should use tuned mode.
 
-## 3.3) Retrieval Modes (Chat)
+### Retrieval Modes (Chat)
 
-Ghost now supports two retrieval modes in the UI:
+- Default (`Retrieval-Only` unchecked):
+  - Retrieves top similar examples
+  - Generates a new response with those examples in prompt
+- Retrieval-only (`Retrieval-Only` checked):
+  - Returns closest real historical reply directly
 
-- Default mode (`Retrieval-Only` unchecked):
-  - Retrieves top similar examples from your dataset
-  - Uses those examples + profile prompt to generate a new reply
-- Retrieval-only mode (`Retrieval-Only` checked):
-  - Returns the closest real historical reply directly
-  - Useful for stronger mimicry when the prompt is close to prior examples
+---
 
-API fields for `/chat`:
-- `retrieval_only` (bool, default `false`)
-- `retrieval_k` (int, default `4`, max `8`)
+## API Commands (Optional)
 
-## 4) Terminal API Flow (optional)
+Use `curl.exe` in PowerShell (not `curl` alias).
 
 ### Upload
-
-Use `curl.exe` in PowerShell (not `curl` alias):
 
 ```powershell
 curl.exe -X POST "http://127.0.0.1:8000/upload" `
@@ -141,18 +107,19 @@ curl.exe -X POST "http://127.0.0.1:8000/upload" `
   -F "epochs=0.5"
 ```
 
-### Check status
+### Status
 
 ```powershell
 curl.exe "http://127.0.0.1:8000/train-status/YOUR_JOB_ID"
 ```
 
 Auto-poll:
+
 ```powershell
 while ($true) { curl.exe "http://127.0.0.1:8000/train-status/YOUR_JOB_ID"; Start-Sleep 10 }
 ```
 
-### Chat
+### Chat (default retrieval + generation)
 
 ```powershell
 curl.exe -X POST "http://127.0.0.1:8000/chat" `
@@ -160,7 +127,7 @@ curl.exe -X POST "http://127.0.0.1:8000/chat" `
   -d "{\"conversation_id\":\"YOUR_CONVERSATION_ID\",\"message\":\"hey what are you up to?\",\"history\":[],\"retrieval_only\":false,\"retrieval_k\":4}"
 ```
 
-Retrieval-only example:
+### Chat (retrieval-only)
 
 ```powershell
 curl.exe -X POST "http://127.0.0.1:8000/chat" `
@@ -168,84 +135,71 @@ curl.exe -X POST "http://127.0.0.1:8000/chat" `
   -d "{\"conversation_id\":\"YOUR_CONVERSATION_ID\",\"message\":\"hey what are you up to?\",\"history\":[],\"retrieval_only\":true,\"retrieval_k\":4}"
 ```
 
-## 5) Troubleshooting
+### List conversations
 
-### `No module named redis` / missing packages
+```powershell
+curl.exe "http://127.0.0.1:8000/conversations"
+```
+
+---
+
+## Troubleshooting
+
+### Docker error: daemon not running
+
+If you see `failed to connect to the docker API...dockerDesktopLinuxEngine`:
+
+1. Start Docker Desktop.
+2. Wait until it is fully running.
+3. Run `docker version`.
+4. Then run `docker start ghost-redis`.
+
+### `No module named redis`
 
 ```powershell
 python -m pip install redis "rq>=1.16.0,<2"
 python -m pip install -r requirements.txt
 ```
 
-### Wrong Python interpreter keeps getting used
+### Worker says `can't open file ... run_worker.py`
 
-Run with absolute Ghost interpreter:
+You are in wrong folder. Must be inside `...\Ghost`.
 
 ```powershell
-& "C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost\.venv\Scripts\python.exe" -m uvicorn app.main:app --reload --port 8000
-& "C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost\.venv\Scripts\python.exe" run_worker.py
+cd C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost
+& "C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost\.venv\Scripts\python.exe" .\run_worker.py
 ```
 
 ### `/upload` fails: `No messages found for friend 'X'`
 
-`target_speaker` is wrong. List speakers first:
+`target_speaker` does not match dataset speaker exactly.
 
 ```powershell
 Get-Content data\message_1_converted_50_dedup.jsonl | ForEach-Object { ($_ | ConvertFrom-Json).speaker } | Sort-Object -Unique
 ```
 
-Then upload using one exact speaker name.
+### Job status is `failed`
 
-### Job says `failed`
-
-Check log path from `/train-status`:
+Check the log path from `/train-status`:
 
 ```powershell
 Get-Content "C:\Users\girid\OneDrive\Documents\Gokul_Projects\Gokul_Workspace\Ghost\app_state\logs\YOUR_JOB_ID.log" -Tail 120
 ```
 
-### GPU not used (`no accelerator is found`)
+### GPU check
 
-Check:
 ```powershell
 python -c "import torch; print(torch.cuda.is_available(), torch.cuda.device_count())"
 ```
 
-If `False`, install CUDA torch in Ghost venv (see setup section).
+---
 
-### Job status is `queued` for too long
+## Stop Everything
 
-- Make sure Terminal 3 worker is running and shows:
-  `*** Listening on ghost-train...`
-- Re-upload once to create a fresh job if an old queued job is stale.
+API terminal: `Ctrl + C`  
+Worker terminal: `Ctrl + C`
 
-### Why quality can feel weak
-
-- 50 lines is very small for style tuning.
-- Use more chat lines when possible (`message_1_converted.jsonl` instead of only 50 lines).
-- Increase epochs moderately (for small data, try `1.5` to `3.0`).
-
-### What epochs mean
-
-- `1.0` epoch = one full pass through dataset
-- `2.0` epochs = two full passes
-- `0.5` epoch = half pass
-
-More epochs can improve style fit, but too many on tiny data can overfit.
-
-## 6) Stop Commands (Clean Shutdown)
-
-### Stop worker (`run_worker.py`)
-
-In worker terminal:
-`Ctrl + C`
-
-### Stop API (`uvicorn`)
-
-In API terminal:
-`Ctrl + C`
-
-### Stop Redis container
+Stop Redis:
 
 ```powershell
 docker stop ghost-redis
@@ -257,7 +211,9 @@ Optional remove container:
 docker rm ghost-redis
 ```
 
-## Upload File Format
+---
+
+## Input File Format
 
 JSONL, one message per line:
 
@@ -268,7 +224,7 @@ JSONL, one message per line:
 
 Required keys: `speaker`, `text`.
 
-## CLI scripts (still available)
+## Scripts
 
 - `prepare_data.py`
 - `train_lora_qwen3.py`
